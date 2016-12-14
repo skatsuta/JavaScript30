@@ -16,7 +16,7 @@ class Model {
   constructor() {
     this._cities = [];
     this._matchedCities = [];
-    this.matchedCitiesChanged = new Notifier;
+    this.matchedCitiesChanged = new Notifier();
   }
 
   get matchedCities() {
@@ -44,20 +44,15 @@ class Model {
 }
 
 class ViewModel {
-  constructor() {
+  constructor(suggestions) {
+    this.suggestions = suggestions;
     this.model = new Model();
     this.matchedCities = this.model.matchedCities;
 
     // register handler to observer
     this.model.matchedCitiesChanged.observe(() => this.matchedCities = this.model.matchedCities);
 
-    // add event handlers
-    this.searchInput = document.querySelector('input.search');
-    this.suggestions = document.querySelector('ul.suggestions');
-    ['change', 'keyup'].forEach(event =>
-      this.searchInput.addEventListener(event, () => this.render(this.searchInput.value))
-    );
-
+    // initialize model
     this.model.loadCities();
   }
 
@@ -65,13 +60,21 @@ class ViewModel {
     const regex = new RegExp(wordToMatch, 'gi');
     this.model.match(regex);
 
-    this.suggestions.innerHTML = this.matchedCities.map(place => {
+    const html = this.matchedCities.map(place => {
       const highlight = `<span class="hl">${wordToMatch}</span>`;
       const cityName = place.city.replace(regex, highlight);
       const stateName = place.state.replace(regex, highlight);
       return `<li><span class="name">${cityName}, ${stateName}</span></li>`;
     }).join("\n");
+
+    this.suggestions.innerHTML = html;
   }
 }
 
-new ViewModel();
+// main
+const searchInput = document.querySelector('input.search');
+const suggestions = document.querySelector('ul.suggestions');
+const vm = new ViewModel(suggestions);
+['change', 'keyup'].forEach(eventType =>
+  searchInput.addEventListener(eventType, () => vm.render(searchInput.value))
+);
