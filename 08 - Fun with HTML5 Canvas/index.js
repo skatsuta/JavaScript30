@@ -1,90 +1,41 @@
-class Notifier {
-  constructor() {
-    this.handlers = [];
-  }
-
-  observe(handler) {
-    this.handlers.push(handler);
-  }
-
-  fire() {
-    this.handlers.forEach(handler => handler());
-  }
-}
-
-class Painting {
-  constructor(lineWidth) {
-    this.lineWidth = lineWidth;
-    this.lastX = this.lastY = this.hue = 0;
-    this.direction = true;
-    this.notifier = new Notifier();
-  }
-
-  observe(handler) {
-    this.notifier.observe(handler);
-  }
-
-  draw(e) {
-    this.lastX = e.offsetX;
-    this.lastY = e.offsetY;
-    this.hue < 360 ? this.hue++ : this.hue = 0;
-
-    const minLineWidth = 1;
-    const maxLineWidth = 100;
-    if (this.lineWidth < minLineWidth || this.lineWidth > maxLineWidth) {
-      this.direction = !this.direction;
-    }
-    this.direction ? this.lineWidth++ : this.lineWidth--;
-
-    this.notifier.fire();
-  }
-
-  startDrawing(e) {
-    this.lastX = e.offsetX;
-    this.lastY = e.offsetY;
-
-    this.notifier.fire();
-  }
-}
-
-class CtxViewModel {
+class Painter {
   constructor(ctx) {
-    this.painting = new Painting(ctx.lineWidth);
+    ctx.strokeStyle = '#BADA55';
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    this.ctx = ctx;
+
+    this.MIN_LINE_WIDTH = 1;
+    this.MAX_LINE_WIDTH = 100;
 
     this.isDrawing = false;
-    this.lastX = this.painting.lastX;
-    this.lastY = this.painting.lastY;
-    this.hue = this.painting.hue;
-
-    this.ctx = ctx;
-    this.ctx.lineWidth = 1;
-    this.ctx.lineJoin = 'round';
-    this.ctx.lineCap = 'round';
-    this.ctx.strokeStyle = '#BADA55';
-
-    // register handler to observer
-    this.painting.observe(() => {
-      this.lastX = this.painting.lastX;
-      this.lastY = this.painting.lastY;
-      this.ctx.lineWidth = this.painting.lineWidth;
-      this.ctx.strokeStyle = `hsl(${this.painting.hue}, 100%, 50%)`;
-    });
+    this.lastX = this.lastY = 0;
+    this.hue = 0;
+    this.direction = true;
   }
 
   draw(e) {
     if (!this.isDrawing) { return; }
 
-    this.painting.draw(e);
+    const ctx = this.ctx;
+    ctx.strokeStyle = `hsl(${this.hue}, 100%, 50%)`;
+    ctx.beginPath();
+    ctx.moveTo(this.lastX, this.lastY);
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
 
-    this.ctx.beginPath();
-    this.ctx.moveTo(this.lastX, this.lastY);
-    this.ctx.lineTo(e.offsetX, e.offsetY);
-    this.ctx.stroke();
+    [this.lastX, this.lastY] = [e.offsetX, e.offsetY];
+    this.hue < 360 ? this.hue++ : this.hue = 0;
+
+    if (ctx.lineWidth <= this.MIN_LINE_WIDTH || ctx.lineWidth >= this.MAX_LINE_WIDTH) {
+      this.direction = !this.direction;
+    }
+    this.direction ? ctx.lineWidth++ : ctx.lineWidth--;
   }
 
   startDrawing(e) {
     this.isDrawing = true;
-    this.painting.startDrawing(e);
+    [this.lastX, this.lastY] = [e.offsetX, e.offsetY];
   }
 
   stopDrawing() {
@@ -95,10 +46,10 @@ class CtxViewModel {
 const canvas = document.querySelector('#draw');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
-const ctxVm = new CtxViewModel(canvas.getContext('2d'));
+const painter = new Painter(canvas.getContext('2d'));
 [
-  { eventType: 'mousemove', callback: e => ctxVm.draw(e) },
-  { eventType: 'mousedown', callback: e => ctxVm.startDrawing(e) },
-  { eventType: 'mouseup',   callback: () => ctxVm.stopDrawing() },
-  { eventType: 'mouseout',  callback: () => ctxVm.stopDrawing() }
+  { eventType: 'mousemove', callback: e => painter.draw(e) },
+  { eventType: 'mousedown', callback: e => painter.startDrawing(e) },
+  { eventType: 'mouseup',   callback: () => painter.stopDrawing() },
+  { eventType: 'mouseout',  callback: () => painter.stopDrawing() }
 ].forEach(({eventType, callback}) => canvas.addEventListener(eventType, callback));
