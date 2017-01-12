@@ -4,8 +4,10 @@ class Dram {
     this.audio = audio;
     this.className = 'playing';
 
-    key.addEventListener('transitionend', event => {
-      if (event.propertyName !== 'transform') { return; }
+    key.addEventListener('transitionend', (event) => {
+      if (event.propertyName !== 'transform') {
+        return;
+      }
       key.classList.remove(this.className);
     });
   }
@@ -18,17 +20,18 @@ class Dram {
 }
 
 const keys = Array.from(document.querySelectorAll('.key'));
-const drams = Array.from(document.querySelectorAll('audio'))
-  .reduce((drams, audio) => {
-    const keyCode = audio.dataset.key;
-    const key = keys.find(key => key.dataset.key === keyCode);
-    if (!key) { return; }
-    drams[keyCode] = new Dram(key, audio);
+const dramMap = Array.from(document.querySelectorAll('audio')).reduce((drams, audio) => {
+  const keyCode = audio.dataset.key;
+  const pressedKey = keys.find(key => key.dataset.key === keyCode);
+  if (!pressedKey) {
     return drams;
-  }, {});
+  }
+  return Object.assign(drams, { [keyCode]: new Dram(pressedKey, audio) });
+}, {});
 
-window.addEventListener('keydown', event => {
-  const dram = drams[event.keyCode.toString()];
-  if (!dram) { return; }
-  dram.playSound();
+addEventListener('keydown', (event) => {
+  const dram = dramMap[event.keyCode.toString()];
+  if (dram) {
+    dram.playSound();
+  }
 });
