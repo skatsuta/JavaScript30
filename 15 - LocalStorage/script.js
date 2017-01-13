@@ -1,5 +1,3 @@
-'use strict';
-
 class Notifier {
   constructor() {
     this.handlers = [];
@@ -60,10 +58,10 @@ class ViewModel {
             <input id="item${i}" type="checkbox" data-index="${i}" ${checked}/>
             <label for="item${i}">${item.text}</label>
           </li>`;
-      }).join("\n");
+      }).join('\n');
 
       this.itemsList.innerHTML = html;
-    }
+    };
     this.populateList();
   }
 
@@ -72,7 +70,7 @@ class ViewModel {
 
     const item = {
       text: this.addItemInput.value,
-      done: false
+      done: false,
     };
     this.itemsStore.add(item);
 
